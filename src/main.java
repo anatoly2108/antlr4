@@ -6,7 +6,7 @@ public class main {
 
     public static void main(String[]args) {
         try {
-            CharStream input = CharStreams.fromFileName("./erlang/src/helloword.erl");
+            CharStream input = CharStreams.fromFileName("./erlang/src/myexample.erl");
             Lexer lexer = new ErlangLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ErlangParser parser = new ErlangParser(tokens);
@@ -20,4 +20,3 @@ public class main {
     }
 
 }
-
