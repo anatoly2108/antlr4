@@ -11,6 +11,8 @@ import java.util.List;
 
 public class MyListener extends ErlangBaseListener {
     //Stack<String> spawn_stack = new Stack<String>();
+    main.Graph graph = new main.Graph();
+    //String currentFunctionName = null;
 
 
     @Override public void enterFunctionCall(ErlangParser.FunctionCallContext ctx) {
@@ -31,6 +33,17 @@ public class MyListener extends ErlangBaseListener {
                 .start.getText());
 
             System.out.println("spawn creates function: " + what_fun_created.toString());
+
+            // создание вершины в графе
+            graph.nodes.add(what_fun_created.toString());
+
+
+
+
+
+            // создание вершины в графе
+            // ... тут код
+
         }
 
         /*           мусор
