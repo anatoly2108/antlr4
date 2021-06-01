@@ -4,12 +4,13 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.IOException;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class main {
+
+    //public static ParseTree tree_copy;
 
     public static void main(String[]args) {
 
@@ -25,6 +26,10 @@ public class main {
             ParseTreeWalker walker = new ParseTreeWalker();
             MyListener listener = new MyListener();
 
+            //
+            //tree_copy = tree;
+            //
+
             walker.walk(listener, tree);
 
             //parser.addParseListener(listener); //это было надо до добавления волкера
@@ -33,7 +38,9 @@ public class main {
             //ErlangParser.FormsContext ads = parser.forms(); //это было надо до добавления волкера
             //System.out.println(ads.toStringTree(parser)); // тут дерево с стиле ЛИСП
 
-            //listener.gra
+
+
+
         }
         catch (IOException e) {
             e.printStackTrace();
