@@ -12,6 +12,7 @@ import java.util.List;
 public class MyListener extends ErlangBaseListener {
     //Stack<String> spawn_stack = new Stack<String>();
     main.Graph graph = new main.Graph();
+    String entryFunctionName = "main"; // входная функция
     //String currentFunctionName = null;
 
 
@@ -36,9 +37,6 @@ public class MyListener extends ErlangBaseListener {
 
             // создание вершины в графе
             graph.nodes.add(what_fun_created.toString());
-
-
-
 
 
             // создание вершины в графе
