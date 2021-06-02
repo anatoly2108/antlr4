@@ -13,9 +13,9 @@ public class main {
 
     static class Graph {
         // org.antlr.v4.runtime.misc: OrderedHashSet, MultiMap
-        Set<String> nodes = new OrderedHashSet<String>(); // list of functions
-        MultiMap<String, String> edges =                  // caller->callee
-                new MultiMap<String, String>();
+        Set<String> nodes = new OrderedHashSet<String>();                   // list of functions
+        MultiMap<String, String> edges = new MultiMap<String, String>();   // caller->callee
+
 
         public void edge(String source, String target) {
             edges.map(source, target);
@@ -24,8 +24,8 @@ public class main {
         public String toString() {
             return "edges: " + edges.toString() + ", functions: " + nodes;
         }
-        // пока закомментим
-        /*public String toDOT() {
+
+        public String toDOT() {
             StringBuilder buf = new StringBuilder();
             buf.append("digraph G {\n");
             buf.append("  ranksep=.25;\n");
@@ -50,7 +50,6 @@ public class main {
             buf.append("}\n");
             return buf.toString();
         }
-    */
     }
 
 
@@ -84,6 +83,8 @@ public class main {
 
 
             System.out.println(listener.graph.toString());
+            System.out.println(listener.graph.toDOT());
+
 
         }
         catch (IOException e) {

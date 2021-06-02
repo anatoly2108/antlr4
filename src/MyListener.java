@@ -6,20 +6,45 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.List;
-//import java.util.Stack;
+import java.util.Stack;
 
 
 public class MyListener extends ErlangBaseListener {
-    //Stack<String> spawn_stack = new Stack<String>();
     main.Graph graph = new main.Graph();
     String entryFunctionName = "main"; // входная функция
-    //String currentFunctionName = null;
+    String currentFunctionName = entryFunctionName; // текущая функция
+    Stack<String> func_stack = new Stack<String>();
+
+    // самое начало дерева
+    @Override public void enterForms(ErlangParser.FormsContext ctx) {
+        func_stack.push(currentFunctionName);
+    }
 
 
     @Override public void enterFunctionCall(ErlangParser.FunctionCallContext ctx) {
+        if (ctx.start.getText().equals("spawn")) {
+            currentFunctionName = func_stack.peek(); // тут априори не пусто
+        }
+        /*if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self")) {
+            func_stack.push(ctx.start.getText()); // зашли в функцию, добавили название в стек
+        }*/
+        if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
+            graph.nodes.add(ctx.start.getText());
+            if (!func_stack.peek().equals("main")) {
+                //ребро
+                graph.edge(func_stack.peek(), ctx.start.getText());
+            }
+            func_stack.push(ctx.start.getText()); // зашли в функцию, добавили название в стек
+        }
 
         System.out.println("Entered FunctionCall, name of function: " + ctx.start.getText());
+        //
+        System.out.println("\n\n\nStack: ");
+        func_stack.forEach(System.out::println);
+        System.out.println("\n\n\n");
+        //
 
+        /* это вообще было не нужно, похоже
         StringBuilder what_fun_created = new StringBuilder(); //имя процесса, который создал fun внутри spawn
         if (ctx.start.getText().equals("spawn")) {
             what_fun_created.append(ctx.argumentList().exprs().expr(0).expr100().expr150(0).expr160(0)
@@ -44,6 +69,8 @@ public class MyListener extends ErlangBaseListener {
 
         }
 
+         */
+
         /*           мусор
         String x = ctx.getText();
         String par = ctx.parent.getText();
@@ -56,7 +83,17 @@ public class MyListener extends ErlangBaseListener {
 
 
     @Override public void exitFunctionCall(ErlangParser.FunctionCallContext ctx) {
+        if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
+            func_stack.pop(); // вышли из функции, убрали из стека
+        }
+
         System.out.println("\tExited FunctionCall, name of function: " + ctx.start.getText());
+
+        //
+        System.out.println("\n\nStack: ");
+        func_stack.forEach(System.out::println);
+        System.out.println("\n\n\n");
+        //
     }
 
 
