@@ -5,6 +5,9 @@ import org.antlr.v4.runtime.misc.*;
 
 import java.io.IOException;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -15,11 +18,18 @@ public class main {
         // org.antlr.v4.runtime.misc: OrderedHashSet, MultiMap
         Set<String> nodes = new OrderedHashSet<String>();                   // list of functions
         MultiMap<String, String> edges = new MultiMap<String, String>();   // caller->callee
+        MultiMap<String, String> pids = new MultiMap<String, String>();   // alias->node
+        MultiMap<String, String> knows_of = new MultiMap<String, String>();
 
 
         public void edge(String source, String target) {
             edges.map(source, target);
         }
+
+        public void pid(String source, String target)  { pids.map(source, target); }
+
+        public void knows(String source, String target)  { knows_of.map(source, target); }
+
 
         public String toString() {
             return "edges: " + edges.toString() + ", functions: " + nodes;
@@ -84,6 +94,13 @@ public class main {
 
             System.out.println(listener.graph.toString());
             System.out.println(listener.graph.toDOT());
+
+
+            try {
+                Files.writeString(Path.of("./graph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                System.out.println("Error! Couldn't write dot file.");
+            }
 
 
         }
