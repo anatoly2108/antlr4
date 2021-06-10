@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,7 @@ public class main {
         MultiMap<String, String> edges = new MultiMap<String, String>();   // caller->callee
         MultiMap<String, String> pids = new MultiMap<String, String>();   // alias->node
         MultiMap<String, String> knows_of = new MultiMap<String, String>();
+        HashMap<Pair, String> edge_labels = new HashMap<Pair, String>();
 
 
         public void edge(String source, String target) {
@@ -39,6 +41,7 @@ public class main {
             StringBuilder buf = new StringBuilder();
             buf.append("digraph G {\n");
             buf.append("  ranksep=.25;\n");
+            buf.append("  layout=circo;\n");
             buf.append("  edge [arrowsize=.5]\n");
             buf.append("  node [shape=circle, fontname=\"ArialNarrow\",\n");
             buf.append("        fontsize=12, fixedsize=true, height=.45];\n");
@@ -54,7 +57,15 @@ public class main {
                     buf.append(src);
                     buf.append(" -> ");
                     buf.append(trg);
-                    buf.append(";\n");
+
+                    for (Pair<String, String> node1_node2 : edge_labels.keySet()) {
+                        if (node1_node2.a == src && node1_node2.b == trg) {
+                            buf.append("  [label=");
+                            buf.append(edge_labels.get(node1_node2));
+                            buf.append("];\n");
+                        }
+                    }
+
                 }
             }
             buf.append("}\n");
@@ -66,7 +77,7 @@ public class main {
     static class Promela {
 
         Set<String> atoms = new OrderedHashSet<String>();
-        Set<String> chanels = new OrderedHashSet<String>();
+        Set<String> channels = new OrderedHashSet<String>();
 
         String printAtoms() {
             StringBuilder buf_atoms = new StringBuilder();
@@ -87,17 +98,17 @@ public class main {
             return buf_atoms.toString();
         }
 
-        String printChanels() {
-            StringBuilder buf_chanels = new StringBuilder();
+        String printchannels() {
+            StringBuilder buf_channels = new StringBuilder();
 
-            for (String chanel : chanels) { // print all chanels
-                buf_chanels.append("chan ");
-                buf_chanels.append(chanel);
-                buf_chanels.append(" = [0] of {mtype};\n");
+            for (String channel : channels) { // print all channels
+                buf_channels.append("chan ");
+                buf_channels.append(channel);
+                buf_channels.append(" = [0] of {mtype};\n");
             }
-            buf_chanels.append("\n");
+            buf_channels.append("\n");
 
-            return buf_chanels.toString();
+            return buf_channels.toString();
         }
 
 
@@ -107,7 +118,7 @@ public class main {
         public String toPromela() {
             StringBuilder buf = new StringBuilder();
             buf.append(this.printAtoms());
-            buf.append(this.printChanels());
+            buf.append(this.printchannels());
             buf.append("bit msgSent = 0;\nbit msgRcv = 0;\n\n");
 
             return buf.toString();
@@ -146,7 +157,7 @@ public class main {
 
     public static void main(String[]args) {
         try {
-            CharStream input = CharStreams.fromFileName("./erlang/src/myexample.erl");
+            CharStream input = CharStreams.fromFileName("./erlang/src/myexample4.erl");
             ErlangLexer lexer = new ErlangLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ErlangParser parser = new ErlangParser(tokens);
@@ -175,7 +186,7 @@ public class main {
 
 
 
-
+/*
         try {
             CharStream input = CharStreams.fromFileName("./graph.dot");
             DOTLexer lexer = new DOTLexer(input);
@@ -195,7 +206,7 @@ public class main {
         catch (IOException e) {
             e.printStackTrace();
         }
-
+*/
     }
 
 }

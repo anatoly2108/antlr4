@@ -1,4 +1,6 @@
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.misc.MultiMap;
+import org.antlr.v4.runtime.misc.Pair;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -16,6 +18,7 @@ public class MyListener extends ErlangBaseListener {
     String currentFunctionName = entryFunctionName; // текущая функция
     Stack<String> func_stack = new Stack<String>();
     boolean isInReceive = false;
+    boolean isRightInRight = false;
 
 
     // самое начало дерева
@@ -32,16 +35,15 @@ public class MyListener extends ErlangBaseListener {
 
         // добавление вершины, если вложенное в spawn, то добавляется и ребро (точнее возможность его создания)
         if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
-            graph.nodes.add(ctx.start.getText());
+            graph.nodes.add(ctx.start.getText()); // тут пишется в вершины название процесса, как он написан внутри spawn
 
             // если не main, то это вложенный spawn, создаём ребро (точнее возможность его создания)
             if (!func_stack.peek().equals("main")) {
-                graph.knows(func_stack.peek(), ctx.start.getText()); // ребро
+                graph.knows(func_stack.peek(), ctx.start.getText()); // ребро (точнее новый адрес, известный процессу)
             }
 
             func_stack.push(ctx.start.getText()); // зашли в функцию, добавили название в стек
         }
-
     }
 
 
@@ -58,10 +60,11 @@ public class MyListener extends ErlangBaseListener {
 
         System.out.println(ctx.tokAtom().getText());
 
-        // здесь добавляем алиасы
+        // здесь добавляем алиасы (pid как параметр функции, и что за процесс скрывается за параметром)
 
         // здесь это нужно уже для работы кодом определения функций
-        currentFunctionName = ctx.start.getText(); // возможно, дичь!!!
+        // по сути для ресива??
+        currentFunctionName = ctx.start.getText();
 
 
         // ping(PidPong)
@@ -73,7 +76,6 @@ public class MyListener extends ErlangBaseListener {
         // вариант для ping, принимающего 1 параметр: ping(PidPong)
         if (ctx.start.getText().equals("ping")) {
             graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "pong"); // alias->node
-            //var x100500 = 5;
         }
 
         /*
@@ -88,6 +90,28 @@ public class MyListener extends ErlangBaseListener {
             graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "right"); // alias->node
         }
 
+    }
+
+    @Override public void exitFunctionClause(ErlangParser.FunctionClauseContext ctx) {
+        if (ctx.start.getText().equals("right")) {
+            // если right не шлёт, что нужно ping'у
+            if (!isRightInRight && currentFunctionName.equals("right")) {
+                // редактирование рёбер
+                MultiMap new_edges = new MultiMap<String, String>();
+                for (String src : graph.edges.keySet()) {
+                    for (String trg : graph.edges.get(src)) {
+                        if (!(src.equals("pong") && trg.equals("ping"))) {
+                            new_edges.map(src, trg);
+                        }
+
+                    }
+                }
+                graph.edges = new_edges;
+
+                // редактирование списка подписей рёбер
+                graph.edge_labels.remove(new Pair("pong", "ping"));
+            }
+        }
     }
 
 
@@ -116,54 +140,76 @@ public class MyListener extends ErlangBaseListener {
 
         if (node.getText().equals("!")) {
             ErlangParser.Expr100Context curTree = (ErlangParser.Expr100Context) node.getParent();
-            String pid_alias = curTree.expr150(0).getText();
+            String pid_alias = curTree.expr150(0).getText(); // куда шлём
             System.out.println("\n\n" + pid_alias + "\n\n");
 
-            // edges надо поменять на просто список известных пидов (это про вложенные сповны)
-            // и вот только здесь на операторе ! надо ребро создавать (добавление в edges)
-            // надо ещё над сообщениями подумать, как ребро подписывать
+            // edges надо поменять на просто список известных пидов (это про вложенные сповны)  !DONE!
+            // и вот только здесь на операторе ! надо ребро создавать (добавление в edges)      !DONE!
+            // надо ещё над сообщениями подумать, как ребро подписывать                         !DONE!
+
+            // если есть процесс right (это надо проверить)
+            // надо прочекать, получили ли от него ответку, и только потом переходить во вложенный receive
 
 
-            // создание ребра
+            String message = "";
+
+            // создание подписи для ребра
             if (isInReceive == false) {
-                graph.edge(currentFunctionName, graph.pids.get(pid_alias).get(0));
+                // мы не в ресиве, тут просто отправка сообщения по типу PidPong ! {ping, self()}
+                //                                                   или PidPing ! pong
+
+                // достаём сообщение из tuple
+                message = curTree.expr150(1).expr160(0).expr200(0).
+                        expr300(0).expr400(0).expr500(0).expr600(0).expr650().
+                        expr700().expr800().exprMax(0).tuple_().exprs().start.getText();
             }
             else {
-                var cxz = 2;
-                var vd = 22;
-                graph.edge(currentFunctionName, graph.pids.get(pid_alias).get(0));
+                // два случая: если tuple или если просто сообщение
+                // достаём сообщение из tuple
+                ErlangParser.Tuple_Context tuple_check = curTree.expr150(1).expr160(0).expr200(0).
+                        expr300(0).expr400(0).expr500(0).expr600(0).expr650().
+                        expr700().expr800().exprMax(0).tuple_();
 
-
-                //graph.edge(graph.pids.get(pid_alias).get(0), currentFunctionName);
+                if (tuple_check != null) {
+                    message = tuple_check.exprs().start.getText();
+                }
+                else {
+                    message = curTree.expr150(1).getText();
+                }
             }
-            /*graph.edge(currentFunctionName, graph.pids.get(pid_alias).get(0)); // написать если мы не внутри ресива
-            //graph.edge(currentFunctionName, graph.pids.get("PidPong").get(0));
 
-             */
+            // создание ребра
+            graph.edge(currentFunctionName, graph.pids.get(pid_alias).get(0));
 
-            //var sdad = graph.pids.get(pid_alias).get(0);
-
-
+            // создание подписи
+            graph.edge_labels.put(new Pair<>(currentFunctionName, graph.pids.get(pid_alias).get(0)), message);
 
 
 
 
-            var x12221 = 3423;
+
         }
-
-
-
-        var x122 = node.getText();
-        var x1 = 342;
     }
 
 
     @Override public void enterReceiveExpr(ErlangParser.ReceiveExprContext ctx) {
         isInReceive = true;
 
-        //var x1 = ctx.crClauses().crClause()
+        // проверка ресива функции right
+        if (currentFunctionName.equals("right")) {
+            if (ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.size() >= 3) {
+                //var voskl = ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.get(1).getText();
 
+                String rights_msg = ctx.crClauses().crClause(0).clauseBody()
+                        .exprs().expr(0).expr100().children.get(2).getText();
 
+                if (rights_msg.equals("right")) {
+                    isRightInRight = true;
+                }
+
+            }
+
+        }
 
     }
 
@@ -176,6 +222,9 @@ public class MyListener extends ErlangBaseListener {
             //graph.knows(ctx.exprs().stop.getText(), ctx.exprs().start.getText()); // ребро
             graph.pid(ctx.exprs().stop.getText(), ctx.exprs().start.getText()); // alias->node
             //graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "pong"); // alias->node
+        }
+        else {
+            ;
         }
     }
 
