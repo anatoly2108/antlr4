@@ -21,12 +21,4 @@ public class MyDOTListener extends DOTBaseListener {
         promela.edge_labels.put(new Pair<>(node1, node2), ctx.attr_list().a_list(0).stop.getText());
     }
 
-/*
-    @Override public void exitGraph(DOTParser.GraphContext ctx) {
-        var x = 2;
-    }
-*/
-
-
-
 }

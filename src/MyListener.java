@@ -1,14 +1,7 @@
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.MultiMap;
 import org.antlr.v4.runtime.misc.Pair;
-import org.antlr.v4.runtime.tree.ErrorNode;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.Interval;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Stack;
 
 
@@ -47,13 +40,11 @@ public class MyListener extends ErlangBaseListener {
     }
 
 
-
     @Override public void exitFunctionCall(ErlangParser.FunctionCallContext ctx) {
         if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
             func_stack.pop(); // вышли из функции, убрали из стека
         }
     }
-
 
 
     @Override public void enterFunctionClause(ErlangParser.FunctionClauseContext ctx) {
@@ -63,7 +54,6 @@ public class MyListener extends ErlangBaseListener {
         // здесь это нужно уже для работы кодом определения функций
         // по сути для ресива??
         currentFunctionName = ctx.start.getText();
-
 
         // ping(PidPong)
         // pong()
@@ -76,18 +66,10 @@ public class MyListener extends ErlangBaseListener {
             graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "pong"); // alias->node
         }
 
-        /*
-        // вариант для pong, 0 параметров: pong()
-        if (ctx.start.getText().equals("pong")) {
-            graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "right"); // alias->node
-            //var x100500 = 5;
-        }
-*/
         // вариант для pong, принимающего 1 параметр: pong(PidRight)
         if (ctx.start.getText().equals("pong") && ctx.clauseArgs().patArgumentList().patExprs() != null) {
             graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "right"); // alias->node
         }
-
     }
 
     @Override public void exitFunctionClause(ErlangParser.FunctionClauseContext ctx) {
@@ -101,7 +83,6 @@ public class MyListener extends ErlangBaseListener {
                         if (!(src.equals("pong") && trg.equals("ping"))) {
                             new_edges.map(src, trg);
                         }
-
                     }
                 }
                 graph.edges = new_edges;
@@ -112,41 +93,11 @@ public class MyListener extends ErlangBaseListener {
         }
     }
 
-
-    /*@Override public void enterClauseBody(ErlangParser.ClauseBodyContext ctx) {
-        var xxx = ctx.exprs().expr(0).expr100().children;
-        var xxxx = ctx.exprs().expr(1).expr100().children;
-
-
-
-        if (ctx.exprs().expr(0).expr100().getText().equals("!")) {
-            var x100500 = 5;
-        }
-
-
-
-
-        var x0 = ctx.getText();
-        var x1 = ctx.exprs();
-        var x2 = ctx.exprs().getText();
-
-
-        var x100500 = 5;
-    }
-*/
     @Override public void visitTerminal(TerminalNode node) {
 
         if (node.getText().equals("!")) {
             ErlangParser.Expr100Context curTree = (ErlangParser.Expr100Context) node.getParent();
             String pid_alias = curTree.expr150(0).getText(); // куда шлём
-
-            // edges надо поменять на просто список известных пидов (это про вложенные сповны)  !DONE!
-            // и вот только здесь на операторе ! надо ребро создавать (добавление в edges)      !DONE!
-            // надо ещё над сообщениями подумать, как ребро подписывать                         !DONE!
-
-            // если есть процесс right (это надо проверить)
-            // надо прочекать, получили ли от него ответку, и только потом переходить во вложенный receive
-
 
             String message = "";
 
@@ -181,10 +132,6 @@ public class MyListener extends ErlangBaseListener {
             // создание подписи
             graph.edge_labels.put(new Pair<>(currentFunctionName, graph.pids.get(pid_alias).get(0)), message);
 
-
-
-
-
         }
     }
 
@@ -203,11 +150,8 @@ public class MyListener extends ErlangBaseListener {
                 if (rights_msg.equals("right")) {
                     isRightInRight = true;
                 }
-
             }
-
         }
-
     }
 
     @Override public void exitReceiveExpr(ErlangParser.ReceiveExprContext ctx) {
@@ -216,14 +160,8 @@ public class MyListener extends ErlangBaseListener {
 
     @Override public void enterTuple_(ErlangParser.Tuple_Context ctx) {
         if (isInReceive == true) {
-            //graph.knows(ctx.exprs().stop.getText(), ctx.exprs().start.getText()); // ребро
             graph.pid(ctx.exprs().stop.getText(), ctx.exprs().start.getText()); // alias->node
-            //graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "pong"); // alias->node
-        }
-        else {
-            ;
         }
     }
-
 
 }
