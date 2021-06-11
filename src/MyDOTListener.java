@@ -4,7 +4,7 @@ public class MyDOTListener extends DOTBaseListener {
     main.Promela promela = new main.Promela();
 
     @Override public void enterNode_stmt(DOTParser.Node_stmtContext ctx) {
-        //promela.nodes.add(ctx.getText()); // процессы
+        promela.nodes.add(ctx.getText()); // процессы
         promela.atoms.add(ctx.getText()); // добавляем либо название вершин, либо рёбер
     }
 

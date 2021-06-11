@@ -75,6 +75,7 @@ public class main {
         Set<String> atoms = new OrderedHashSet<String>();
         Set<String> channels = new OrderedHashSet<String>();
         HashMap<Pair, String> edge_labels = new HashMap<Pair, String>();
+        Set<String> nodes = new OrderedHashSet<String>();
 
         String printAtoms() {
             StringBuilder buf_atoms = new StringBuilder();
@@ -109,6 +110,9 @@ public class main {
         }
 
         public String toPromela() {
+
+            var xyx = 21;
+
             StringBuilder buf = new StringBuilder();
 
             buf.append(this.printAtoms());
@@ -116,15 +120,17 @@ public class main {
             buf.append(this.printchannels());
             buf.append("bit msgSent = 0;\nbit msgRcv = 0;\n\n");
 
-            buf.append("proctype Right() {\n\tmtype weGotRight;\n\tpongright ? weGotRight;\n");
-            if (this.edge_labels.containsKey(new Pair("right", "pong"))) {
-                buf.append("\trightpong ! ");
-                buf.append(this.edge_labels.get(new Pair("right", "pong")));
-                buf.append(";\n");
+            if (nodes.size() > 2) {
+                buf.append("proctype Right() {\n\tmtype weGotRight;\n\tpongright ? weGotRight;\n");
+                if (this.edge_labels.containsKey(new Pair("right", "pong"))) {
+                    buf.append("\trightpong ! ");
+                    buf.append(this.edge_labels.get(new Pair("right", "pong")));
+                    buf.append(";\n");
+                }
+                buf.append("}\n\n\n");
             }
-            buf.append("}\n");
 
-            buf.append("\n\nproctype Ping() {\n\tmtype weGot;\n\tpingpong ! ");
+            buf.append("proctype Ping() {\n\tmtype weGot;\n\tpingpong ! ");
             buf.append(this.edge_labels.get(new Pair("ping", "pong")));
             buf.append(";\n\tmsgSent = 1;\n\tpongping ? weGot;\n\n\tif ::(weGot == pong) -> {");
             buf.append("\n\t\tmsgRcv = 1;\n\t\tprintf(\"ok\\n\");\n\t} :: else -> skip;\n\tfi\n}");
@@ -136,20 +142,25 @@ public class main {
                 buf.append(this.edge_labels.get(new Pair("pong", "ping")));
                 buf.append(";\n");
             }
-
-            buf.append("\t\t:: true -> {\n\t\t\tpongright ! ");
-            buf.append(this.edge_labels.get(new Pair("pong", "right")));
-            buf.append(";\n\t\t\trightpong ? weGotRight;\n" +
-                       "\t\t\tif ::(weGotRight == right) ->\n" +
-                       "\t\t\tpongping ! ");
-            if (this.edge_labels.containsKey(new Pair("right", "pong"))) {
-                buf.append(this.edge_labels.get(new Pair("pong", "ping")));
-            }
-            buf.append(";\n");
-            buf.append("\t\t\t\t::else -> skip;\n" +
+            if (nodes.size() > 2) {
+                buf.append("\t\t:: true -> {\n\t\t\t");
+                if (this.edge_labels.containsKey(new Pair("pong", "right"))) {
+                    buf.append("pongright ! ");
+                    buf.append(this.edge_labels.get(new Pair("pong", "right")));
+                }
+                buf.append(";\n\t\t\trightpong ? weGotRight;\n" +
+                        "\t\t\tif ::(weGotRight == right) ->\n\t\t\t\t");
+                if (this.edge_labels.containsKey(new Pair("right", "pong"))
+                        && this.edge_labels.get(new Pair("right", "pong")).equals("right")) {
+                    buf.append("pongping ! ");
+                    buf.append(this.edge_labels.get(new Pair("pong", "ping")));
+                }
+                buf.append(";\n");
+                buf.append("\t\t\t\t::else -> skip;\n" +
                         "\t\t\tfi\n" +
-                        "\t\t}\n" +
-                        "\t\tfi\n" +
+                        "\t\t}\n");
+            }
+            buf.append("\t\tfi\n" +
                         "\t} ::else -> skip;\n" +
                         "\tfi\n" +
                         "}\n");
@@ -170,7 +181,7 @@ public class main {
     public static void main(String[]args) {
         // генерация графа
         try {
-            CharStream input = CharStreams.fromFileName("./erlang/src/myexample2.erl");
+            CharStream input = CharStreams.fromFileName("./erlang/src/myexample4.erl");
             ErlangLexer lexer = new ErlangLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ErlangParser parser = new ErlangParser(tokens);

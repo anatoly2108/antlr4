@@ -1,4 +1,4 @@
-mtype = {ping, pong, right};
+mtype = {ping, pong, right, left};
 
 chan pingpong = [0] of {mtype};
 chan pongping = [0] of {mtype};
@@ -11,7 +11,7 @@ bit msgRcv = 0;
 proctype Right() {
 	mtype weGotRight;
 	pongright ? weGotRight;
-	rightpong ! right;
+	rightpong ! left;
 }
 
 
@@ -33,12 +33,11 @@ proctype Pong() {
 	pingpong ? weGot;
 	if ::(weGot == ping) -> {
 		if
-		:: true -> pongping ! pong;
 		:: true -> {
 			pongright ! right;
 			rightpong ? weGotRight;
 			if ::(weGotRight == right) ->
-			pongping ! pong;
+				;
 				::else -> skip;
 			fi
 		}
