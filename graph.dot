@@ -1,0 +1,12 @@
+digraph G {
+  ranksep=.25;
+  layout=circo;
+  edge [arrowsize=.5]
+  node [shape=circle, fontname="ArialNarrow",
+        fontsize=12, fixedsize=true, height=.45];
+  ping; pong; right; 
+  ping -> pong  [label=ping];
+  pong -> right  [label=right];
+  pong -> ping  [label=pong];
+  right -> pong  [label=right];
+}

@@ -58,8 +58,6 @@ public class MyListener extends ErlangBaseListener {
 
     @Override public void enterFunctionClause(ErlangParser.FunctionClauseContext ctx) {
 
-        System.out.println(ctx.tokAtom().getText());
-
         // здесь добавляем алиасы (pid как параметр функции, и что за процесс скрывается за параметром)
 
         // здесь это нужно уже для работы кодом определения функций
@@ -141,7 +139,6 @@ public class MyListener extends ErlangBaseListener {
         if (node.getText().equals("!")) {
             ErlangParser.Expr100Context curTree = (ErlangParser.Expr100Context) node.getParent();
             String pid_alias = curTree.expr150(0).getText(); // куда шлём
-            System.out.println("\n\n" + pid_alias + "\n\n");
 
             // edges надо поменять на просто список известных пидов (это про вложенные сповны)  !DONE!
             // и вот только здесь на операторе ! надо ребро создавать (добавление в edges)      !DONE!

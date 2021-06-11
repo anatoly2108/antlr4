@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 public class main {
@@ -73,11 +71,10 @@ public class main {
         }
     }
 
-
     static class Promela {
-
         Set<String> atoms = new OrderedHashSet<String>();
         Set<String> channels = new OrderedHashSet<String>();
+        HashMap<Pair, String> edge_labels = new HashMap<Pair, String>();
 
         String printAtoms() {
             StringBuilder buf_atoms = new StringBuilder();
@@ -111,53 +108,69 @@ public class main {
             return buf_channels.toString();
         }
 
-
-
-
-
         public String toPromela() {
             StringBuilder buf = new StringBuilder();
+
             buf.append(this.printAtoms());
+
             buf.append(this.printchannels());
             buf.append("bit msgSent = 0;\nbit msgRcv = 0;\n\n");
 
-            return buf.toString();
-
-
-
-/*
-            StringBuilder buf = new StringBuilder();
-            buf.append("digraph G {\n");
-            buf.append("  ranksep=.25;\n");
-            buf.append("  edge [arrowsize=.5]\n");
-            buf.append("  node [shape=circle, fontname=\"ArialNarrow\",\n");
-            buf.append("        fontsize=12, fixedsize=true, height=.45];\n");
-            buf.append("  ");
-            for (String node : nodes) { // print all nodes first
-                buf.append(node);
-                buf.append("; ");
-            }
-            buf.append("\n");
-            for (String src : edges.keySet()) {
-                for (String trg : edges.get(src)) {
-                    buf.append("  ");
-                    buf.append(src);
-                    buf.append(" -> ");
-                    buf.append(trg);
-                    buf.append(";\n");
-                }
+            buf.append("proctype Right() {\n\tmtype weGotRight;\n\tpongright ? weGotRight;\n");
+            if (this.edge_labels.containsKey(new Pair("right", "pong"))) {
+                buf.append("\trightpong ! ");
+                buf.append(this.edge_labels.get(new Pair("right", "pong")));
+                buf.append(";\n");
             }
             buf.append("}\n");
-            return buf.toString();*/
+
+            buf.append("\n\nproctype Ping() {\n\tmtype weGot;\n\tpingpong ! ");
+            buf.append(this.edge_labels.get(new Pair("ping", "pong")));
+            buf.append(";\n\tmsgSent = 1;\n\tpongping ? weGot;\n\n\tif ::(weGot == pong) -> {");
+            buf.append("\n\t\tmsgRcv = 1;\n\t\tprintf(\"ok\\n\");\n\t} :: else -> skip;\n\tfi\n}");
+
+            buf.append("\n\nproctype Pong() {\n\tmtype weGot, weGotRight;\n\tpingpong ? weGot;\n\t");
+            buf.append("if ::(weGot == ping) -> {\n\t\tif\n");
+            if (this.edge_labels.containsKey(new Pair("pong", "ping"))) {
+                buf.append("\t\t:: true -> pongping ! ");
+                buf.append(this.edge_labels.get(new Pair("pong", "ping")));
+                buf.append(";\n");
+            }
+
+            buf.append("\t\t:: true -> {\n\t\t\tpongright ! ");
+            buf.append(this.edge_labels.get(new Pair("pong", "right")));
+            buf.append(";\n\t\t\trightpong ? weGotRight;\n" +
+                       "\t\t\tif ::(weGotRight == right) ->\n" +
+                       "\t\t\tpongping ! ");
+            if (this.edge_labels.containsKey(new Pair("right", "pong"))) {
+                buf.append(this.edge_labels.get(new Pair("pong", "ping")));
+            }
+            buf.append(";\n");
+            buf.append("\t\t\t\t::else -> skip;\n" +
+                        "\t\t\tfi\n" +
+                        "\t\t}\n" +
+                        "\t\tfi\n" +
+                        "\t} ::else -> skip;\n" +
+                        "\tfi\n" +
+                        "}\n");
+
+            buf.append("\nactive proctype main() {\n" +
+                        "\trun Ping();\n" +
+                        "\trun Pong();\n" +
+                        "\trun Right();\n" +
+                        "}\n");
+
+            buf.append("\nltl check_me {[] (msgSent -> <> msgRcv)}");
+
+            return buf.toString();
         }
     }
 
 
-    //public static ParseTree tree_copy;
-
     public static void main(String[]args) {
+        // генерация графа
         try {
-            CharStream input = CharStreams.fromFileName("./erlang/src/myexample4.erl");
+            CharStream input = CharStreams.fromFileName("./erlang/src/myexample2.erl");
             ErlangLexer lexer = new ErlangLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ErlangParser parser = new ErlangParser(tokens);
@@ -167,26 +180,20 @@ public class main {
             MyListener listener = new MyListener();
             walker.walk(listener, tree);
 
-            System.out.println(listener.graph.toString());
-            System.out.println(listener.graph.toDOT());
-
+            //System.out.println(listener.graph.toString());
+            //System.out.println(listener.graph.toDOT());
 
             try {
                 Files.writeString(Path.of("./graph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write dot file.");
             }
-
-
         }
         catch (IOException e) {
             e.printStackTrace();
         }
 
-
-
-
-/*
+        // генерация кода на Promela
         try {
             CharStream input = CharStreams.fromFileName("./graph.dot");
             DOTLexer lexer = new DOTLexer(input);
@@ -198,15 +205,16 @@ public class main {
             MyDOTListener listener = new MyDOTListener();
             walker.walk(listener, tree);
 
+            //System.out.println("\n\n" + listener.promela.toPromela());
 
-            System.out.println("\n\n" + listener.promela.toPromela());
-
-
+            try {
+                Files.writeString(Path.of("./promela.pml"), listener.promela.toPromela(), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                System.out.println("Error! Couldn't write pml file.");
+            }
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-*/
     }
-
 }
