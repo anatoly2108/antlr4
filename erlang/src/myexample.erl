@@ -2,7 +2,9 @@
 -compile(export_all).
 
 
-
+%%
+% Обычный пинг-понг
+%
 main() ->
   spawn(fun() ->
     ping(spawn(fun()-> pong() end))

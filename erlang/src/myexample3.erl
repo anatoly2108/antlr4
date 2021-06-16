@@ -2,6 +2,9 @@
 -compile(export_all).
 
 
+%%
+% right "забыл" отправить сообщение назад
+%
 main() ->
   spawn(fun() -> ping(spawn(fun()->pong(spawn(fun()->right() end))end))end).
 

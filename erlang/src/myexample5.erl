@@ -1,9 +1,9 @@
--module(myexample2).
+-module(myexample5).
 -compile(export_all).
 
 
 %%
-% Правильный ping-pong-right
+% pong не отправил сообщение к ping
 %
 main() ->
   spawn(fun() -> ping(spawn(fun()->pong(spawn(fun()->right() end))end))end).
@@ -20,10 +20,10 @@ ping(PidPong) ->
 pong(PidRight) ->
 
   receive
-    {ping, PidPing} -> PidRight ! {right, self()},
-      receive
-        right -> PidPing ! pong
-      end
+    {ping, PidPing} -> PidRight ! {right, self()}%,
+      %receive
+        %right -> PidPing ! pong
+      %end
   end.
 
 

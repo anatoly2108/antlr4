@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Set;
 
+
 public class main {
 
     static class Graph {
@@ -174,11 +175,17 @@ public class main {
         }
     }
 
+    static class FileNames {
+        String ErlangFileName = "./erlang/src/myexample.erl";
+        String DOTFileName = "./graph.dot";
+    }
 
     public static void main(String[]args) {
+        FileNames fileNames = new FileNames();
+
         // генерация графа
         try {
-            CharStream input = CharStreams.fromFileName("./erlang/src/myexample4.erl");
+            CharStream input = CharStreams.fromFileName(fileNames.ErlangFileName);
             ErlangLexer lexer = new ErlangLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ErlangParser parser = new ErlangParser(tokens);
@@ -206,7 +213,7 @@ public class main {
 
         // генерация кода на Promela
         try {
-            CharStream input = CharStreams.fromFileName("./graph.dot");
+            CharStream input = CharStreams.fromFileName(fileNames.DOTFileName);
             DOTLexer lexer = new DOTLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             DOTParser parser = new DOTParser(tokens);

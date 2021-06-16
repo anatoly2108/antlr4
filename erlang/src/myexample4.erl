@@ -1,7 +1,10 @@
--module(myexample2).
+-module(myexample4).
 -compile(export_all).
 
 
+%%
+% right отправил сообщение "left"
+%
 main() ->
   spawn(fun() -> ping(spawn(fun()->pong(spawn(fun()->right() end))end))end).
 
