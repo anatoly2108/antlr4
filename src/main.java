@@ -149,7 +149,8 @@ public class main {
                 buf.append(";\n\t\t\trightpong ? weGotRight;\n" +
                         "\t\t\tif ::(weGotRight == right) ->\n\t\t\t\t");
                 if (this.edge_labels.containsKey(new Pair("right", "pong"))
-                        && this.edge_labels.get(new Pair("right", "pong")).equals("right")) {
+                        && this.edge_labels.get(new Pair("right", "pong")).equals("right")
+                        && (this.edge_labels.containsKey(new Pair("pong", "ping")))) {
                     buf.append("pongping ! ");
                     buf.append(this.edge_labels.get(new Pair("pong", "ping")));
                 }
@@ -176,7 +177,7 @@ public class main {
     }
 
     static class FileNames {
-        String ErlangFileName = "./erlang/src/myexample.erl";
+        String ErlangFileName = "./erlang/src/myexample5.erl";
         String DOTFileName = "./graph.dot";
     }
 
