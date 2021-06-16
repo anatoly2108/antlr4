@@ -110,9 +110,6 @@ public class main {
         }
 
         public String toPromela() {
-
-            var xyx = 21;
-
             StringBuilder buf = new StringBuilder();
 
             buf.append(this.printAtoms());
@@ -194,8 +191,11 @@ public class main {
             //System.out.println(listener.graph.toString());
             //System.out.println(listener.graph.toDOT());
 
+            ErlangDOTTranslationStrategy graphStrategy = new ErlangDOTTranslationStrategy();
+            String resultOfErlangTranslation = graphStrategy.translateCode(listener);
+
             try {
-                Files.writeString(Path.of("./graph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+                Files.writeString(Path.of("./graph.dot"), resultOfErlangTranslation, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write dot file.");
             }
