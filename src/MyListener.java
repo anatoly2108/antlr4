@@ -1,22 +1,34 @@
 import org.antlr.v4.runtime.misc.MultiMap;
+import org.antlr.v4.runtime.misc.OrderedHashSet;
 import org.antlr.v4.runtime.misc.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.ArrayList;
+import java.util.Set;
 import java.util.Stack;
 
 
 public class MyListener extends ErlangBaseListener {
     main.Graph graph = new main.Graph();
-    String entryFunctionName = "main"; // входная функция
-    String currentFunctionName = entryFunctionName; // текущая функция
+    String entryFunctionName; // входная функция
+    boolean isMainProcFound = false;
+    String currentFunctionName; // текущая функция
+    //String entryFunctionName = "main"; // входная функция
+    //String currentFunctionName = entryFunctionName; // текущая функция
     Stack<String> func_stack = new Stack<String>();
     boolean isInReceive = false;
     boolean isRightInRight = false;
+    Set<String> ignoredFunctions = new OrderedHashSet<String>();
+    ArrayList<String> listOfFuncCalls = new ArrayList<String>();
+
 
 
     // самое начало дерева
     @Override public void enterForms(ErlangParser.FormsContext ctx) {
-        func_stack.push(currentFunctionName);
+        ignoredFunctions.add("io");
+        ignoredFunctions.add("self");
+        ignoredFunctions.add("spawn");
+
     }
 
 
@@ -27,21 +39,22 @@ public class MyListener extends ErlangBaseListener {
         }
 
         // добавление вершины, если вложенное в spawn, то добавляется и ребро (точнее возможность его создания)
-        if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
+        if (!ignoredFunctions.contains(ctx.start.getText())) {
             graph.nodes.add(ctx.start.getText()); // тут пишется в вершины название процесса, как он написан внутри spawn
 
             // если не main, то это вложенный spawn, создаём ребро (точнее возможность его создания)
-            if (!func_stack.peek().equals("main")) {
+            if (!func_stack.peek().equals(entryFunctionName)) {
                 graph.knows(func_stack.peek(), ctx.start.getText()); // ребро (точнее новый адрес, известный процессу)
             }
 
             func_stack.push(ctx.start.getText()); // зашли в функцию, добавили название в стек
+            listOfFuncCalls.add(ctx.start.getText());
         }
     }
 
 
     @Override public void exitFunctionCall(ErlangParser.FunctionCallContext ctx) {
-        if (!ctx.start.getText().equals("io") && !ctx.start.getText().equals("self") && !ctx.start.getText().equals("spawn")) {
+        if (!ignoredFunctions.contains(ctx.start.getText())) {
             func_stack.pop(); // вышли из функции, убрали из стека
         }
     }
@@ -49,46 +62,57 @@ public class MyListener extends ErlangBaseListener {
 
     @Override public void enterFunctionClause(ErlangParser.FunctionClauseContext ctx) {
 
-        // здесь добавляем алиасы (pid как параметр функции, и что за процесс скрывается за параметром)
-
-        // здесь это нужно уже для работы кодом определения функций
-        // по сути для ресива??
-        currentFunctionName = ctx.start.getText();
-
-        // ping(PidPong)
-        // pong()
-        // pong(PidRight)
-        // right()
-
-
-        // вариант для ping, принимающего 1 параметр: ping(PidPong)
-        if (ctx.start.getText().equals("ping")) {
-            graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "pong"); // alias->node
+        if (isMainProcFound == false) {
+            entryFunctionName = ctx.start.getText();
+            isMainProcFound = true;
+            currentFunctionName = entryFunctionName; // самое начало дерева
+            func_stack.push(currentFunctionName);
         }
+        else {
+            // здесь добавляем алиасы (pid как параметр функции, и что за процесс скрывается за параметром)
 
-        // вариант для pong, принимающего 1 параметр: pong(PidRight)
-        if (ctx.start.getText().equals("pong") && ctx.clauseArgs().patArgumentList().patExprs() != null) {
-            graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), "right"); // alias->node
+            // здесь это нужно уже для работы кодом определения функций
+            // по сути для ресива??
+            // и для определения контекста spawn
+            currentFunctionName = ctx.start.getText();
+
+            // ping(PidPong)
+            // pong()
+            // pong(PidRight)
+            // right()
+
+
+            // вариант для ping, принимающего 1 параметр: ping(PidPong)
+            if (ctx.start.getText().equals(listOfFuncCalls.get(0))) {
+                graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), listOfFuncCalls.get(1)); // alias->node
+            }
+
+            // вариант для pong, принимающего 1 параметр: pong(PidRight)
+            if (ctx.start.getText().equals(listOfFuncCalls.get(1)) && ctx.clauseArgs().patArgumentList().patExprs() != null) {
+                graph.pid(ctx.clauseArgs().patArgumentList().patExprs().getText(), listOfFuncCalls.get(2)); // alias->node
+            }
         }
     }
 
     @Override public void exitFunctionClause(ErlangParser.FunctionClauseContext ctx) {
-        if (ctx.start.getText().equals("right")) {
-            // если right не шлёт, что нужно ping'у
-            if (!isRightInRight && currentFunctionName.equals("right")) {
-                // редактирование рёбер
-                MultiMap new_edges = new MultiMap<String, String>();
-                for (String src : graph.edges.keySet()) {
-                    for (String trg : graph.edges.get(src)) {
-                        if (!(src.equals("pong") && trg.equals("ping"))) {
-                            new_edges.map(src, trg);
+        if (listOfFuncCalls.size() > 2) {
+            if (ctx.start.getText().equals(listOfFuncCalls.get(2))) {
+                // если right не шлёт, что нужно ping'у
+                if (!isRightInRight && currentFunctionName.equals(listOfFuncCalls.get(2))) {
+                    // редактирование рёбер
+                    MultiMap new_edges = new MultiMap<String, String>();
+                    for (String src : graph.edges.keySet()) {
+                        for (String trg : graph.edges.get(src)) {
+                            if (!(src.equals(listOfFuncCalls.get(1)) && trg.equals(listOfFuncCalls.get(0)))) {
+                                new_edges.map(src, trg);
+                            }
                         }
                     }
-                }
-                graph.edges = new_edges;
+                    graph.edges = new_edges;
 
-                // редактирование списка подписей рёбер
-                graph.edge_labels.remove(new Pair("pong", "ping"));
+                    // редактирование списка подписей рёбер
+                    graph.edge_labels.remove(new Pair(listOfFuncCalls.get(1), listOfFuncCalls.get(0)));
+                }
             }
         }
     }
@@ -139,16 +163,18 @@ public class MyListener extends ErlangBaseListener {
     @Override public void enterReceiveExpr(ErlangParser.ReceiveExprContext ctx) {
         isInReceive = true;
 
-        // проверка ресива функции right
-        if (currentFunctionName.equals("right")) {
-            if (ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.size() >= 3) {
-                //var voskl = ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.get(1).getText();
+        if (listOfFuncCalls.size() > 2) {
+            // проверка ресива функции right
+            if (currentFunctionName.equals(listOfFuncCalls.get(2))) {
+                if (ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.size() >= 3) {
+                    //var voskl = ctx.crClauses().crClause(0).clauseBody().exprs().expr(0).expr100().children.get(1).getText();
 
-                String rights_msg = ctx.crClauses().crClause(0).clauseBody()
-                        .exprs().expr(0).expr100().children.get(2).getText();
+                    String rights_msg = ctx.crClauses().crClause(0).clauseBody()
+                            .exprs().expr(0).expr100().children.get(2).getText();
 
-                if (rights_msg.equals("right")) {
-                    isRightInRight = true;
+                    if (rights_msg.equals("right")) {
+                        isRightInRight = true;
+                    }
                 }
             }
         }
