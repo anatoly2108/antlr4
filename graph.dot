@@ -7,5 +7,6 @@ digraph G {
   ping; pong; right; 
   ping -> pong  [label=ping];
   pong -> right  [label=right];
-  right -> pong  [label=left];
+  pong -> ping  [label=pong];
+  right -> pong  [label=right];
 }

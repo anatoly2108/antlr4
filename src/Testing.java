@@ -37,8 +37,11 @@ public class Testing {
 
             numberOfGraphNodes = listener.graph.nodes.size();
 
+
+            ErlangDOTTranslationStrategy graphStrategy = new ErlangDOTTranslationStrategy();
+            String resultOfErlangTranslation = graphStrategy.translateCode(listener);
             try {
-                Files.writeString(Path.of("./TesingGraph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+                Files.writeString(Path.of("./TesingGraph.dot"), resultOfErlangTranslation, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write TesingGraph.dot");
             }
@@ -103,8 +106,10 @@ public class Testing {
                 numberOfGraphEdges *= 2;
             }
 */
+            ErlangDOTTranslationStrategy graphStrategy = new ErlangDOTTranslationStrategy();
+            String resultOfErlangTranslation = graphStrategy.translateCode(listener);
             try {
-                Files.writeString(Path.of("./TesingGraph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+                Files.writeString(Path.of("./TesingGraph.dot"), resultOfErlangTranslation, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write TesingGraph.dot");
             }
@@ -155,8 +160,10 @@ public class Testing {
 
             numberOfMessagesInGraph = listener.graph.edge_labels.size();
 
+            ErlangDOTTranslationStrategy graphStrategy = new ErlangDOTTranslationStrategy();
+            String resultOfErlangTranslation = graphStrategy.translateCode(listener);
             try {
-                Files.writeString(Path.of("./TesingGraph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+                Files.writeString(Path.of("./TesingGraph.dot"), resultOfErlangTranslation, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write TesingGraph.dot");
             }
@@ -207,8 +214,10 @@ public class Testing {
 
             testLabels = listener.graph.edge_labels;
 
+            ErlangDOTTranslationStrategy graphStrategy = new ErlangDOTTranslationStrategy();
+            String resultOfErlangTranslation = graphStrategy.translateCode(listener);
             try {
-                Files.writeString(Path.of("./TesingGraph.dot"), listener.graph.toDOT(), StandardCharsets.UTF_8);
+                Files.writeString(Path.of("./TesingGraph.dot"), resultOfErlangTranslation, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 System.out.println("Error! Couldn't write TesingGraph.dot");
             }
