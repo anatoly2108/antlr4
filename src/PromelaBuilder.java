@@ -161,12 +161,14 @@ public class PromelaBuilder implements CodeBuilder {
                 promela.graphListener.listOfFuncCalls.get(0).substring(1) + "();\n" +
 
                 "\trun " + promela.graphListener.listOfFuncCalls.get(1).substring(0, 1).toUpperCase() +
-                promela.graphListener.listOfFuncCalls.get(1).substring(1) + "();\n" +
+                promela.graphListener.listOfFuncCalls.get(1).substring(1) + "();\n");
 
-                "\trun " + promela.graphListener.listOfFuncCalls.get(2).substring(0, 1).toUpperCase() +
-                promela.graphListener.listOfFuncCalls.get(2).substring(1) + "();\n" +
+        if (promela.nodes.size() > 2) {
+            result.append("\trun " + promela.graphListener.listOfFuncCalls.get(2).substring(0, 1).toUpperCase() +
+                    promela.graphListener.listOfFuncCalls.get(2).substring(1) + "();\n");
+        }
 
-                "}\n");
+        result.append("}\n");
     }
 
     private void buildLTLStatement() {
